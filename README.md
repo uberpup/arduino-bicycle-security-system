@@ -11,10 +11,10 @@ Basic description of it's work process:
 System allows to track the stolen bicycle (or any other thing it was attached to, if it provides the opportunity for GPS module to connect to the sattelites). All the components could be replaced with their analogues, in some cases it would require changing the code (another libraries, constants etc.). Total cost was ~2000 rubles in 2016. Body was 3D printed.
 
 Scheme of the device:
-![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/edit/master/img1 "Prototype Scheme")
+![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/blob/master/img1.png "Prototype Scheme")
 
 Body:
-![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/edit/master/img2 "Body in Autodesk")
+![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/blob/master/img2.png "Body in Autodesk")
 
 The look:
-![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/edit/master/img3 "Look inside")
+![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/blob/master/img3.png "Look inside")
