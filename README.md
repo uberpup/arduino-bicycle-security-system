@@ -8,6 +8,13 @@ Basic description of it's work process:
 4. GSM/GPRS module SIM 800L with SIM-card inside starts sending messages to the owner with current location of device.
 5. User can unblock the system on any stage and get it into sleeping mode using the remote control.
 
-System allows to track the stolen bicycle (or any other thing it was attached to, if it provides the opportunity for GPS module to connect to the sattelites). All the components could be replaced with their analogues, in some cases it would require changing the code (another libraries, constants etc.). Total cost was ~2000 rubles in 2016.
+System allows to track the stolen bicycle (or any other thing it was attached to, if it provides the opportunity for GPS module to connect to the sattelites). All the components could be replaced with their analogues, in some cases it would require changing the code (another libraries, constants etc.). Total cost was ~2000 rubles in 2016. Body was 3D printed.
 
 Scheme of the device:
+![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/edit/master/img1 "Prototype Scheme")
+
+Body:
+![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/edit/master/img2 "Body in Autodesk")
+
+The look:
+![alt-текст](https://github.com/uberpup/arduino-bicycle-security-system/edit/master/img3 "Look inside")
