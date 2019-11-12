@@ -1,243 +1,245 @@
 /* Including needed libraries and declaring global variables */
 
-#include <TinyGPS++.h> 
-#include <SoftwareSerial.h> 
-#include <Wire.h> 
-#include "Kalman.h" 
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include "Kalman.h"
 
-static const int RXPin = 8, TXPin = 9; 
-static const uint32_t GPSBaud = 38400; 
+static const int RXPin = 8, TXPin = 9;
+static const uint32_t GPSBaud = 38400;
 
-Kalman kalmanX; 
-Kalman kalmanY; 
+Kalman kalmanX;
+Kalman kalmanY;
 
-uint8_t IMUAddress = 0x68; 
+uint8_t IMUAddress = 0x68;
 
-TinyGPSPlus gps; 
+TinyGPSPlus gps;
 
-int16_t gyroX; int16_t gyroX1; 
-int16_t gyroY; int16_t gyroY1; 
-int16_t gyroZ;  
+int16_t gyroX; int16_t gyroX1;
+int16_t gyroY; int16_t gyroY1;
+int16_t gyroZ;
 
-double gyroXangle = 180; double gyroX1angle = 180; // Angle calculate using the gyro 
-double gyroYangle = 180; double gyroY1angle = 180; 
+double gyroXangle = 180; double gyroX1angle = 180; // Angle calculate using the gyro
+double gyroYangle = 180; double gyroY1angle = 180;
 
-double kalAngleX; // Calculate the angle using a Kalman filter 
-double kalAngleY; 
+double kalAngleX; // Calculate the angle using a Kalman filter
+double kalAngleY;
 
-uint32_t timer1; 
- 
-SoftwareSerial ss(3, 4); 
-SoftwareSerial mySerial(RXPin, TXPin);  
+uint32_t timer1;
 
-int v1; 
+SoftwareSerial ss(3, 4);
+SoftwareSerial mySerial(RXPin, TXPin);
 
-byte strttmr = 1; 
-byte warncounter = 0; 
-byte cond = 0; 
-byte condvf = 0;// unblocked default  
+int v1;
 
+byte strttmr = 1;
+byte warncounter = 0;
+byte cond = 0;
+byte condvf = 0;// unblocked default
 
 
-void setup() { 
 
- Wire.begin(); 
+void setup() {
 
-Serial.begin(19200); 
+	Wire.begin();
 
-ss.begin(GPSBaud); 
+	Serial.begin(19200);
 
-mySerial.begin(19200);  //Скорость порта для связи Arduino с GSM модулем 
+	ss.begin(GPSBaud);
 
-mySerial.println("AT"); 
+	mySerial.begin(19200);  //Скорость порта для связи Arduino с GSM модулем
 
-i2cWrite(0x6B,0x00); // Disable sleep mode       
+	mySerial.println("AT");
 
-kalmanX.setAngle(180); // Set starting angle 
+	i2cWrite(0x6B,0x00); // Disable sleep mode
 
-kalmanY.setAngle(180); 
+	kalmanX.setAngle(180); // Set starting angle
 
-timer1 = micros(); 
+	kalmanY.setAngle(180);
 
-} 
+	timer1 = micros();
 
- 
-void warning(){ 
+}
 
- unsigned long timer;  
 
- float lat = (gps.location.lat(), gps.location.isValid(), 11, 6); 
+void warning() {
 
- float lng = (gps.location.lng(), gps.location.isValid(), 12, 6); 
+	unsigned long timer;
 
- if (strttmr != 0)
-     timer = millis(); 
+	float lat = (gps.location.lat(), gps.location.isValid(), 11, 6);
 
- if (((millis() - timer) > 1000000) || (warncounter == 0)) {   // Appr. 17 minutes 
+	float lng = (gps.location.lng(), gps.location.isValid(), 12, 6);
 
-  String latlon = String(lat,6) + String(' ') + String(lng,6) ; 
+	if (strttmr != 0)
+	    timer = millis();
 
-  sms(latlon,"+79125143223");   // Sending current latitude and longtitude by SMS 
+	if (((millis() - timer) > 1000000) || (warncounter == 0)) {   // Appr. 17 minutes
 
-} 
+		String latlon = String(lat,6) + String(' ') + String(lng,6) ;
 
- warncounter=1; 
+		sms(latlon,"+79125143223");   // Sending current latitude and longtitude by SMS
+	}
 
- strttmr=0; 
+	warncounter = 1;
 
-} 
+	strttmr = 0;
 
-void blocked(){ 
+}
 
- // Checking gyro values, starting to use GPS in case of big difference between previous and current  
- 
- uint8_t* data = i2cRead(0x3B,14);       
 
- gyroX1 = ((data[8] << 8) | data[9]); 
+void blocked() {
 
- gyroY1 = ((data[10] << 8) | data[11]); 
+	 // Checking gyro values, starting to use GPS in case of big difference between previous and current
 
- double gyroXrate = (double)gyroX1 / 131.0; 
+	 uint8_t* data = i2cRead(0x3B,14);
 
- double gyroYrate = -((double)gyroY1 / 131.0); 
+	 gyroX1 = ((data[8] << 8) | data[9]);
 
- gyroX1angle += kalmanX.getRate() * ((double)(micros() - timer1) / 1000000); // Calculating gyro angle using the unbiased rate 
+	 gyroY1 = ((data[10] << 8) | data[11]);
 
- gyroY1angle += kalmanY.getRate() * ((double)(micros() - timer1) / 1000000); 
+	 double gyroXrate = (double)gyroX1 / 131.0;
 
- if ((abs(gyroX1angle - gyroXangle) > 45) || (abs(gyroY1angle - gyroYangle) > 45)) {
-     cond = 0;
-     warncounter = 0;
-     strttmr = 1;
- } 
- 
-} 
+	 double gyroYrate = -((double)gyroY1 / 131.0);
 
- 
+	 gyroX1angle += kalmanX.getRate() * ((double)(micros() - timer1) / 1000000); // Calculating gyro angle using the unbiased rate
 
-void loop() { 
+	 gyroY1angle += kalmanY.getRate() * ((double)(micros() - timer1) / 1000000);
 
-if (mySerial.available()) 
-    Serial.write(mySerial.read()); 
+	 if ((abs(gyroX1angle - gyroXangle) > 45) || (abs(gyroY1angle - gyroYangle) > 45)) {
+	     cond = 0;
+	     warncounter = 0;
+	     strttmr = 1;
+	 }
 
-if (Serial.available()) 
-    mySerial.write(Serial.read());   
+}
 
-uint8_t* data = i2cRead(0x3B,14);       
 
-gyroX = ((data[8] << 8) | data[9]); 
 
-gyroY = ((data[10] << 8) | data[11]); 
+void loop() {
 
-gyroZ = ((data[12] << 8) | data[13]); 
+	if (mySerial.available())
+	    Serial.write(mySerial.read());
 
-double gyroXrate = (double)gyroX / 131.0; 
+	if (Serial.available())
+	    mySerial.write(Serial.read());
 
-double gyroYrate = -((double)gyroY / 131.0); 
+	uint8_t* data = i2cRead(0x3B,14);
 
-gyroXangle += kalmanX.getRate() * ((double)(micros() - timer1) / 1000000); // Calculate gyro angle using the unbiased rate 
+	gyroX = ((data[8] << 8) | data[9]);
 
-gyroYangle += kalmanY.getRate() * ((double)(micros() - timer1) / 1000000); 
+	gyroY = ((data[10] << 8) | data[11]);
 
-kalAngleX = kalmanX.getAngle(accXangle, gyroXrate, (double)(micros() - timer1) / 1000000); // Calculate the angle using a Kalman filter 
+	gyroZ = ((data[12] << 8) | data[13]);
 
-kalAngleY = kalmanY.getAngle(accYangle, gyroYrate, (double)(micros() - timer1) / 1000000); 
+	double gyroXrate = (double)gyroX / 131.0;
 
-timer1 = micros(); 
+	double gyroYrate = -((double)gyroY / 131.0);
 
- v1 = digitalRead(2); 
+	gyroXangle += kalmanX.getRate() * ((double)(micros() - timer1) / 1000000); // Calculate gyro angle using the unbiased rate
 
-  if (v1 == 1) { 
+	gyroYangle += kalmanY.getRate() * ((double)(micros() - timer1) / 1000000);
 
-    if (cond == 0)
-      cond = 2; 
+	kalAngleX = kalmanX.getAngle(accXangle, gyroXrate, (double)(micros() - timer1) / 1000000); // Calculate the angle using a Kalman filter
 
-    if (cond == 2)
-      cond = 0; 
+	kalAngleY = kalmanY.getAngle(accYangle, gyroYrate, (double)(micros() - timer1) / 1000000);
 
-    if (cond == 1) {
-      cond = 0;
-      warncounter = 0;
-      strttmr = 1;
-    } 
+	timer1 = micros();
 
-  } 
+	v1 = digitalRead(2);
 
-  switch(cond){ 
+  	if (v1 == 1) {
 
-    case 1: warning(); 
-     break; 
+	   if (cond == 0)
+	       cond = 2;
 
-    case 2: if (condvf == 0) { sms("Blocked","+79125143223"); condvf = 2; } blocked(); 
-     break; 
+	   if (cond == 2)
+	       cond = 0;
 
-    default: if (condvf == 2) { sms("Unblocked","+79125143223"); condvf = 0; } 
-     break; 
+	   if (cond == 1) {
+	       cond = 0;
+	       warncounter = 0;
+	       strttmr = 1;
+	   }
 
-  } 
+	}
 
- /* printInt(gps.satellites.value(), gps.satellites.isValid(), 5); 
+	switch(cond) {
 
-  printInt(gps.hdop.value(), gps.hdop.isValid(), 5); 
+	    case 1:	warning();
+	     	break;
 
-  printFloat(gps.location.lat(), gps.location.isValid(), 11, 6); 
+	    case 2: if (condvf == 0) { sms("Blocked","+79125143223"); condvf = 2; }
+		 	blocked();
+	     	break;
 
-  printFloat(gps.location.lng(), gps.location.isValid(), 12, 6); */ 
+	    default: if (condvf == 2) { sms("Unblocked","+79125143223"); condvf = 0; }
+	    	break;
 
-} 
+	  }
 
+	 /*
+	 printInt(gps.satellites.value(), gps.satellites.isValid(), 5);
 
-void sms(String text, String phone) { 
+	 printInt(gps.hdop.value(), gps.hdop.isValid(), 5);
 
-  Serial.println("SMS send started"); 
+	 printFloat(gps.location.lat(), gps.location.isValid(), 11, 6);
 
-  mySerial.println("AT+CMGS=\"" + phone + "\""); 
+	 printFloat(gps.location.lng(), gps.location.isValid(), 12, 6); */
 
-  delay(1000); 
+}
 
-  mySerial.print(text); 
 
-  delay(300); 
+void sms(String text, String phone) {
 
-  mySerial.print((char)26); 
+	Serial.println("SMS send started");
 
-  delay(300); 
+	mySerial.println("AT+CMGS=\"" + phone + "\"");
 
-  Serial.println("SMS send finished"); 
+	delay(1000);
 
-  delay(3000); 
+	mySerial.print(text);
 
-} 
+	delay(300);
 
- 
-void i2cWrite(uint8_t registerAddress, uint8_t data){ 
+	mySerial.print((char)26);
 
-  Wire.beginTransmission(IMUAddress); 
+	delay(300);
 
-  Wire.write(registerAddress); 
+	Serial.println("SMS send finished");
 
-  Wire.write(data); 
+	delay(3000);
 
-  Wire.endTransmission(); // Send stop 
+}
 
-} 
 
+void i2cWrite(uint8_t registerAddress, uint8_t data){
 
-uint8_t* i2cRead(uint8_t registerAddress, uint8_t nbytes) { 
+	Wire.beginTransmission(IMUAddress);
 
-  uint8_t data[nbytes]; 
+  	Wire.write(registerAddress);
 
-  Wire.beginTransmission(IMUAddress); 
+  	Wire.write(data);
 
-  Wire.write(registerAddress); 
+  	Wire.endTransmission(); // Stop sending
 
-  Wire.endTransmission(false); // Don't release the bus 
+}
 
-  Wire.requestFrom(IMUAddress, nbytes); // Send a repeated start and then release the bus after reading 
 
-  for(uint8_t i = 0; i < nbytes; i++) 
-    data [i]= Wire.read(); 
+uint8_t* i2cRead(uint8_t registerAddress, uint8_t nbytes) {
 
-  return data; 
+ 	uint8_t data[nbytes];
 
-} 
+ 	Wire.beginTransmission(IMUAddress);
+
+ 	Wire.write(registerAddress);
+
+ 	Wire.endTransmission(false); // Don't release the bus
+
+ 	Wire.requestFrom(IMUAddress, nbytes); // Send a repeated start and then release the bus after reading
+
+ 	for (uint8_t i = 0; i < nbytes; ++i)
+    	data [i] = Wire.read();
+
+  	return data;
+
+}
